@@ -43,6 +43,14 @@ export interface TaskPayload {
   status?: TaskStatus;
 }
 
+export interface GithubBranch {
+  id: number;
+  task_id: number;
+  user_id: number;
+  branch_name: string;
+  github_url?: string | null;
+}
+
 export interface UserPayload {
   name: string;
   email: string;

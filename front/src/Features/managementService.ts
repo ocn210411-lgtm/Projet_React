@@ -1,6 +1,6 @@
 import axios from "axios";
 import axiosInstance from "../config/axios/axiosinstance";
-import type { Project, Task, TaskPayload, User, UserPayload } from "../types";
+import type { GithubBranch, Project, Task, TaskPayload, User, UserPayload } from "../types";
 
 export function apiError(error: unknown): string {
   if (axios.isAxiosError(error)) {
@@ -63,13 +63,23 @@ export async function fetchProjects(): Promise<Project[]> {
   return data.projects ?? [];
 }
 
-export async function createProject(payload: { name: string; description?: string; lead_developer_id?: number | null }): Promise<Project> {
+export async function createProject(payload: { name: string; description?: string; lead_developer_id: number }): Promise<Project> {
   const { data } = await axiosInstance.post("/projects", payload);
   return data.project;
 }
 
 export async function deleteProject(id: number): Promise<void> {
   await axiosInstance.delete(`/projects/${id}`);
+}
+
+export async function fetchGithubBranches(taskId: number): Promise<GithubBranch[]> {
+  const { data } = await axiosInstance.get(`/tasks/${taskId}/github-branches`);
+  return data.branches ?? [];
+}
+
+export async function createGithubBranch(taskId: number): Promise<GithubBranch> {
+  const { data } = await axiosInstance.post(`/tasks/${taskId}/github-branches`);
+  return data.branch;
 }
 
 export async function logout(): Promise<void> {
