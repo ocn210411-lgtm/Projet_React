@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Brand from "../../../commons/components/Brand";
 import Icon from "../../../commons/components/Icon";
 import { apiError } from "../../managementService";
 import { changePassword } from "../Services/AuthService";
@@ -30,6 +31,7 @@ function ChangePassword() {
   return (
     <main className="auth-page auth-page--compact">
       <section className="auth-card">
+        <div className="auth-card__brand"><Brand size={34} /></div>
         <div className="auth-icon"><Icon name="lock" /></div>
         <div className="auth-card__heading">
           <h1>Nouveau mot de passe</h1>
