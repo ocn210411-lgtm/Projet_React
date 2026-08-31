@@ -15,7 +15,17 @@ class TaskController extends Controller
     {
         $query = Task::with(['project', 'creator', 'developer'])->latest();
 
-        if ($request->user()->role !== 'manager') {
+        if ($request->user()->role === 'lead_developer') {
+            $query->where(function ($builder) use ($request) {
+                $builder->whereHas('project', function ($project) use ($request) {
+                    $project->where('lead_developer_id', $request->user()->id);
+                })
+                    ->orWhere('assigned_to', $request->user()->id)
+                    ->orWhere(function ($available) {
+                        $available->whereNull('assigned_to')->where('status', 'pending');
+                    });
+            });
+        } elseif ($request->user()->role !== 'manager') {
             $query->where(function ($builder) use ($request) {
                 $builder->where('assigned_to', $request->user()->id)
                     ->orWhere(function ($available) {
@@ -38,7 +48,11 @@ class TaskController extends Controller
             'status' => ['sometimes', Rule::in(['pending', 'assigned', 'in_progress', 'completed', 'expired'])],
         ]);
 
+        $this->ensureProjectLead($request, $data['project_id']);
         $this->ensureAssignableDeveloper($data['assigned_to'] ?? null);
+        if (! empty($data['assigned_to'])) {
+            $this->ensureUnderTaskLimit($data['assigned_to']);
+        }
         $isAssigned = ! empty($data['assigned_to']);
 
         $task = Task::create([
@@ -72,8 +86,11 @@ class TaskController extends Controller
             'status' => ['sometimes', Rule::in(['pending', 'assigned', 'in_progress', 'completed', 'expired'])],
         ]);
 
-        if (array_key_exists('assigned_to', $data)) {
+        if (array_key_exists('assigned_to', $data) && $data['assigned_to'] != $task->assigned_to) {
             $this->ensureAssignableDeveloper($data['assigned_to']);
+            if ($data['assigned_to']) {
+                $this->ensureUnderTaskLimit($data['assigned_to']);
+            }
             $data['assigned_at'] = $data['assigned_to'] ? now() : null;
             if (! array_key_exists('status', $data)) {
                 $data['status'] = $data['assigned_to'] ? 'assigned' : 'pending';
@@ -97,7 +114,9 @@ class TaskController extends Controller
     public function assign(Request $request, Task $task)
     {
         $data = $request->validate(['assigned_to' => ['required', 'exists:users,id']]);
+        $this->ensureProjectLead($request, $task->project_id);
         $this->ensureAssignableDeveloper($data['assigned_to']);
+        $this->ensureUnderTaskLimit($data['assigned_to']);
 
         $task->update([
             'assigned_to' => $data['assigned_to'],
@@ -133,6 +152,14 @@ class TaskController extends Controller
         if ($task->assigned_to !== null) {
             return response()->json(['message' => 'Cette tâche est déjà assignée'], 422);
         }
+
+        if ($task->created_at->copy()->addDays(3)->isFuture()) {
+            return response()->json([
+                'message' => 'Cette tâche ne peut être prise que 3 jours après sa création',
+            ], 422);
+        }
+
+        $this->ensureUnderTaskLimit($request->user()->id);
 
         $task->update([
             'assigned_to' => $request->user()->id,
@@ -180,6 +207,28 @@ class TaskController extends Controller
             ->exists();
 
         abort_unless($valid, 422, 'La tâche doit être assignée à un développeur actif.');
+    }
+
+    private function ensureProjectLead(Request $request, int $projectId): void
+    {
+        if ($request->user()->role === 'manager') {
+            return;
+        }
+
+        $isLead = \App\Models\Project::whereKey($projectId)
+            ->where('lead_developer_id', $request->user()->id)
+            ->exists();
+
+        abort_unless($isLead, 403, 'Seul le lead developer de ce projet peut effectuer cette action.');
+    }
+
+    private function ensureUnderTaskLimit(int $userId): void
+    {
+        $activeTasks = Task::where('assigned_to', $userId)
+            ->whereIn('status', ['assigned', 'in_progress'])
+            ->count();
+
+        abort_if($activeTasks >= 3, 422, 'Ce développeur a déjà 3 tâches en cours au maximum.');
     }
 
     private function ensureTaskOwner(Request $request, Task $task): void

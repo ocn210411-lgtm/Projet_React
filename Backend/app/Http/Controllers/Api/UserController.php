@@ -196,6 +196,17 @@ class UserController extends Controller
         }
 
 
+        if ($user->leadProjects()->exists()) {
+
+            return response()->json([
+
+                'message' => 'Cet utilisateur est lead developer d\'un projet, réaffectez le projet avant de le supprimer'
+
+            ], 409);
+
+        }
+
+
         $user->delete();
 
 

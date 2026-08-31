@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\GithubController;
 
 
 /*
@@ -51,6 +52,23 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Lecture seule accessible à tous les utilisateurs connectés
+    |--------------------------------------------------------------------------
+    |
+    | Nécessaire pour que le lead developer puisse choisir un projet/
+    | développeur lors de la création d'une tâche
+    |
+    */
+
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{user}', [UserController::class, 'show']);
+    Route::get('/projects', [ProjectController::class, 'index']);
+    Route::get('/projects/{project}', [ProjectController::class, 'show']);
+
+
+
 
     /*
     |--------------------------------------------------------------------------
@@ -72,10 +90,9 @@ Route::middleware('auth:sanctum')->group(function () {
         | Gestion utilisateurs
         */
 
-        Route::apiResource(
-            'users',
-            UserController::class
-        );
+        Route::post('/users', [UserController::class, 'store']);
+        Route::put('/users/{user}', [UserController::class, 'update']);
+        Route::delete('/users/{user}', [UserController::class, 'destroy']);
 
 
         Route::patch(
@@ -97,10 +114,9 @@ Route::middleware('auth:sanctum')->group(function () {
         | Gestion projets
         */
 
-        Route::apiResource(
-            'projects',
-            ProjectController::class
-        );
+        Route::post('/projects', [ProjectController::class, 'store']);
+        Route::put('/projects/{project}', [ProjectController::class, 'update']);
+        Route::delete('/projects/{project}', [ProjectController::class, 'destroy']);
 
 
         Route::post(
@@ -116,26 +132,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-
-
-        /*
-        | Création des tâches
-        */
-
-        Route::post(
-            '/tasks',
-            [TaskController::class,'store']
-        );
-
-
-        /*
-        | Assignation tâche
-        */
-
-        Route::put(
-            '/tasks/{task}/assign',
-            [TaskController::class,'assign']
-        );
 
 
         /*
@@ -171,6 +167,29 @@ Route::middleware('auth:sanctum')->group(function () {
     | TASKS
     |--------------------------------------------------------------------------
     */
+
+    Route::middleware('role:manager,lead_developer')->group(function () {
+
+        /*
+        | Création des tâches (Lead Developer de son projet, ou Manager)
+        */
+
+        Route::post(
+            '/tasks',
+            [TaskController::class,'store']
+        );
+
+
+        /*
+        | Assignation tâche (Lead Developer de son projet, ou Manager)
+        */
+
+        Route::put(
+            '/tasks/{task}/assign',
+            [TaskController::class,'assign']
+        );
+
+    });
 
 
     Route::get(
@@ -245,6 +264,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put(
             '/tasks/{task}/status',
             [TaskController::class,'changeStatus']
+        );
+
+
+        /*
+        | Intégration Github : branches créées à partir d'une tâche
+        */
+
+        Route::get(
+            '/tasks/{task}/github-branches',
+            [GithubController::class,'index']
+        );
+
+
+        Route::post(
+            '/tasks/{task}/github-branches',
+            [GithubController::class,'createBranch']
         );
 
 

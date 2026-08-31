@@ -31,11 +31,10 @@ return new class extends Migration
 
 
 
-            // Lead developer responsable du projet
+            // Lead developer responsable du projet (obligatoire)
             $table->foreignId('lead_developer_id')
-                  ->nullable()
                   ->constrained('users')
-                  ->nullOnDelete();
+                  ->restrictOnDelete();
 
 
 

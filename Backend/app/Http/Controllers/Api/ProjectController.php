@@ -58,23 +58,21 @@ class ProjectController extends Controller
 
             'description'=>'nullable|string',
 
-            'lead_developer_id'=>'nullable|exists:users,id'
+            'lead_developer_id'=>'required|exists:users,id'
 
         ]);
 
 
 
-        if ($request->filled('lead_developer_id')) {
-            $isLead = User::whereKey($request->lead_developer_id)
-                ->where('role', 'lead_developer')
-                ->where('is_active', true)
-                ->exists();
+        $isLead = User::whereKey($request->lead_developer_id)
+            ->where('role', 'lead_developer')
+            ->where('is_active', true)
+            ->exists();
 
-            if (! $isLead) {
-                return response()->json([
-                    'message' => 'Le responsable doit être un Lead Developer actif'
-                ], 422);
-            }
+        if (! $isLead) {
+            return response()->json([
+                'message' => 'Le responsable doit être un Lead Developer actif'
+            ], 422);
         }
 
         $project = Project::create([

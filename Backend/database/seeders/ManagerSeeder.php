@@ -14,7 +14,7 @@ class ManagerSeeder extends Seeder
 
             'name' => 'Manager',
 
-            'email' => 'manager@taskflow.local',
+            'email' => 'manager@orbittask.local',
 
             'password' => Hash::make('password'),
 
@@ -22,7 +22,7 @@ class ManagerSeeder extends Seeder
 
             'is_active' => true,
 
-            'must_change_password' => false
+            'must_change_password' => true
 
         ]);
     }
