@@ -13,6 +13,19 @@ return new class extends Migration
     {
         Schema::create('github_branches', function (Blueprint $table) {
             $table->id();
+
+            $table->foreignId('task_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            $table->foreignId('user_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
+
+            $table->string('branch_name');
+
+            $table->string('github_url')->nullable();
+
             $table->timestamps();
         });
     }

@@ -44,4 +44,12 @@ class Task extends Model
         return $this->belongsTo(User::class,'assigned_to');
     }
 
+
+
+    // Branches Github créées à partir de la tâche
+    public function githubBranches()
+    {
+        return $this->hasMany(GithubBranch::class);
+    }
+
 }
